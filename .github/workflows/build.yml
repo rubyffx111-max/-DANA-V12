@@ -5,39 +5,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.2'
           channel: stable
-          
-      - name: Install icon tool
-        run: flutter pub add dev:flutter_launcher_icons
-        
-      - name: Create icon config
+
+      - name: Setup Python for icon
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Pillow
+        run: pip install Pillow
+
+      - name: Generate App Icons from your logo
         run: |
-          cat > flutter_launcher_icons.yaml << 'EOF'
-          flutter_launcher_icons:
-            android: "launcher_icon"
-            ios: false
-            image_path: "IMG-20261003-WA7721.jpg"
-            min_sdk_android: 21
-            web:
-              generate: false
-            windows:
-              generate: false
-          EOF
-          cat flutter_launcher_icons.yaml
-          
-      - name: Generate Icon
-        run: |
-          flutter pub get
-          dart run flutter_launcher_icons
-          
+          python3 << 'PY'
+          from PIL import Image
+          import os
+          src = "IMG-20261003-WA7721.jpg"
+          print(f"Using {src}")
+          img = Image.open(src).convert("RGBA")
+          # Make square with white background
+          size = max(img.size)
+          new_img = Image.new("RGBA", (size, size), (255,255,255,0))
+          new_img.paste(img, ((size-img.size[0])//2, (size-img.size[1])//2))
+          # Android densities
+          icons = {
+            "mipmap-mdpi": 48,
+            "mipmap-hdpi": 72,
+            "mipmap-xhdpi": 96,
+            "mipmap-xxhdpi": 144,
+            "mipmap-xxxhdpi": 192
+          }
+          for folder, s in icons.items():
+            path = f"android/app/src/main/res/{folder}"
+            os.makedirs(path, exist_ok=True)
+            out = os.path.join(path, "ic_launcher.png")
+            resized = new_img.resize((s, s), Image.LANCZOS)
+            resized.save(out)
+            print(f"Created {out}")
+          print("Icons done!")
+          PY
+
       - name: Build APK
         run: flutter build apk --release
-        
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:

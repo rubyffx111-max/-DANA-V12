@@ -1,5 +1,7 @@
 name: Build DANA V12 APK
-on: [push]
+on:
+  push:
+    branches: [ main ]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -8,10 +10,23 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
-      - run: flutter create. --platforms=android --project-name dana_v12
-      - run: flutter pub get
-      - run: flutter build apk --release
-      - uses: actions/upload-artifact@v4
+          channel: 'stable'
+      - name: Save your code
+        run: |
+          cp lib/main.dart /tmp/mycode.dart
+          cp pubspec.yaml /tmp/mypub.yaml
+      - name: Create android
+        run: flutter create . --platforms=android --project-name dana_v12 --overwrite
+      - name: Restore your code
+        run: |
+          cp /tmp/mycode.dart lib/main.dart
+          cp /tmp/mypub.yaml pubspec.yaml
+      - name: Build
+        run: |
+          flutter pub get
+          flutter build apk --release
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
           name: DANA-V12-APK
           path: build/app/outputs/flutter-apk/app-release.apk

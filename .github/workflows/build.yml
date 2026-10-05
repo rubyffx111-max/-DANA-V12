@@ -1,32 +1,41 @@
 name: Build DANA V12 APK
-on:
-  push:
-    branches: [ main ]
+on: push
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
-      - name: Save your code
+          flutter-version: '3.22.2'
+          channel: stable
+          
+      - name: Install icon tool
         run: |
-          cp lib/main.dart /tmp/mycode.dart
-          cp pubspec.yaml /tmp/mypub.yaml
-      - name: Create android
-        run: flutter create . --platforms=android --project-name dana_v12 --overwrite
-      - name: Restore your code
-        run: |
-          cp /tmp/mycode.dart lib/main.dart
-          cp /tmp/mypub.yaml pubspec.yaml
-      - name: Build
+          flutter pub add flutter_launcher_icons --dev
+          echo "flutter_launcher_icons:
+            android: launcher_name: ic_launcher
+            ios: false
+            image_path: IMG-20261003-WA7721.jpg
+            min_sdk_android: 21
+            web:
+              generate: false
+            windows:
+              generate: false
+          " > flutter_launcher_icons.yaml
+          
+      - name: Generate Icon
         run: |
           flutter pub get
-          flutter build apk --release
+          dart run flutter_launcher_icons
+          
+      - name: Build APK
+        run: flutter build apk --release
+        
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DANA-V12-APK
+          name: DANA-V12-APK-With-Logo
           path: build/app/outputs/flutter-apk/app-release.apk

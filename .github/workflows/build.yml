@@ -6,48 +6,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Setup Flutter OLD version
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.2'
+          flutter-version: '3.16.9'
           channel: stable
 
-      - name: Setup Python for icon
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Pillow
-        run: pip install Pillow
-
-      - name: Generate App Icons from your logo
+      - name: Make your DANA logo into app icon
         run: |
+          pip install Pillow -q
           python3 << 'PY'
           from PIL import Image
           import os
-          src = "IMG-20261003-WA7721.jpg"
-          print(f"Using {src}")
-          img = Image.open(src).convert("RGBA")
-          # Make square with white background
-          size = max(img.size)
-          new_img = Image.new("RGBA", (size, size), (255,255,255,0))
-          new_img.paste(img, ((size-img.size[0])//2, (size-img.size[1])//2))
-          # Android densities
-          icons = {
-            "mipmap-mdpi": 48,
-            "mipmap-hdpi": 72,
-            "mipmap-xhdpi": 96,
-            "mipmap-xxhdpi": 144,
-            "mipmap-xxxhdpi": 192
-          }
-          for folder, s in icons.items():
-            path = f"android/app/src/main/res/{folder}"
-            os.makedirs(path, exist_ok=True)
-            out = os.path.join(path, "ic_launcher.png")
-            resized = new_img.resize((s, s), Image.LANCZOS)
-            resized.save(out)
-            print(f"Created {out}")
-          print("Icons done!")
+          # Find any JPG/PNG with IMG or WA in name
+          import glob
+          logos = glob.glob("*.jpg") + glob.glob("*.JPG") + glob.glob("*.png")
+          if not logos:
+            print("No logo found")
+            exit(0)
+          logo_file = logos[0]
+          print(f"Found logo: {logo_file}")
+          img = Image.open(logo_file).convert("RGBA")
+          s = max(img.size)
+          new_img = Image.new("RGBA", (s, s), (0,0,0,0))
+          new_img.paste(img, ((s-img.size[0])//2, (s-img.size[1])//2))
+          for folder, size in {"mipmap-mdpi":48,"mipmap-hdpi":72,"mipmap-xhdpi":96,"mipmap-xxhdpi":144,"mipmap-xxxhdpi":192}.items():
+            p = f"android/app/src/main/res/{folder}"
+            os.makedirs(p, exist_ok=True)
+            new_img.resize((size,size), Image.LANCZOS).save(os.path.join(p,"ic_launcher.png"))
+            print(f"Made {p}/ic_launcher.png")
+          print("DONE!")
           PY
 
       - name: Build APK

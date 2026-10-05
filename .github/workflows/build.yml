@@ -13,18 +13,22 @@ jobs:
           channel: stable
           
       - name: Install icon tool
+        run: flutter pub add dev:flutter_launcher_icons
+        
+      - name: Create icon config
         run: |
-          flutter pub add flutter_launcher_icons --dev
-          echo "flutter_launcher_icons:
-            android: launcher_name: ic_launcher
+          cat > flutter_launcher_icons.yaml << 'EOF'
+          flutter_launcher_icons:
+            android: "launcher_icon"
             ios: false
-            image_path: IMG-20261003-WA7721.jpg
+            image_path: "IMG-20261003-WA7721.jpg"
             min_sdk_android: 21
             web:
               generate: false
             windows:
               generate: false
-          " > flutter_launcher_icons.yaml
+          EOF
+          cat flutter_launcher_icons.yaml
           
       - name: Generate Icon
         run: |
